@@ -53,10 +53,11 @@
 //** Includes and Defines
 #include "Tpm.h"
 
-#if MATH_LIB == WOLF
-
+#ifdef MATH_LIB_WOLF
 #include "BnConvert_fp.h"
 #include "TpmToWolfMath_fp.h"
+
+#define WOLF_HALF_RADIX     (RADIX_BITS == 64 && !defined(FP_64BIT))
 
 //** Functions
 
@@ -73,11 +74,28 @@ BnFromWolf(
     if(bn != NULL)
     {
         int         i;
+#if WOLF_HALF_RADIX
+        pAssert((unsigned)wolfBn->used <= 2 * BnGetAllocated(bn));
+#else
         pAssert((unsigned)wolfBn->used <= BnGetAllocated(bn));
-        for(i = 0; i < wolfBn->used; i++)
+#endif
+        for (i = 0; i < wolfBn->used; i++)
+        {
+#if WOLF_HALF_RADIX
+            if (i & 1)
+                bn->d[i/2] |= (crypt_uword_t)wolfBn->dp[i] << 32;
+            else
+                bn->d[i/2] = wolfBn->dp[i];
+#else
             bn->d[i] = wolfBn->dp[i];
+#endif
+        }
 
+#if WOLF_HALF_RADIX
+        BnSetTop(bn, (wolfBn->used + 1)/2);
+#else
         BnSetTop(bn, wolfBn->used);
+#endif
     }
 }
 
@@ -94,9 +112,22 @@ BnToWolf(
     if (toInit != NULL && initializer != NULL)
     {
         for (i = 0; i < initializer->size; i++)
+        {
+#if WOLF_HALF_RADIX
+            toInit->dp[2 * i] = (fp_digit)initializer->d[i];
+            toInit->dp[2 * i + 1] = (fp_digit)(initializer->d[i] >> 32);
+#else
             toInit->dp[i] = initializer->d[i];
+#endif
+        }
 
-        toInit->used = initializer->size;
+#if WOLF_HALF_RADIX
+        toInit->used = (int)initializer->size * 2;
+        if (toInit->dp[toInit->used - 1] == 0 && toInit->dp[toInit->used - 2] != 0)
+            --toInit->used;
+#else
+        toInit->used = (int)initializer->size;
+#endif
         toInit->sign = 0;
     }
 }
@@ -243,7 +274,7 @@ BnDiv(
     return OK;
 }
 
-#ifdef TPM_ALG_RSA
+#if ALG_RSA
 //*** BnGcd()
 // Get the greatest common divisor of two numbers
 LIB_EXPORT BOOL
@@ -321,7 +352,7 @@ BnModInverse(
 }
 #endif // TPM_ALG_RSA
 
-#ifdef TPM_ALG_ECC
+#if ALG_ECC
 
 //*** PointFromWolf()
 // Function to copy the point result from a wolf ecc_point to a bigNum
@@ -487,4 +518,4 @@ BnEccAdd(
 
 #endif // TPM_ALG_ECC
 
-#endif // MATHLIB WOLF
+#endif // MATH_LIB_WOLF

@@ -33,57 +33,74 @@
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-//** Introduction
-// This file contains the structure definitions used for ECC in the LibTopCrypt
-// version of the code. These definitions would change, based on the library.
-// The ECC-related structures that cross the TPM interface are defined
-// in TpmTypes.h
-//
 
-#ifndef _TPM_TO_WOLF_MATH_H
-#define _TPM_TO_WOLF_MATH_H
+/* TPM specific preprocessor flags for wolfcrypt */
 
-#if MATH_LIB == WOLF
 
-#include <wolfssl/wolfcrypt/tfm.h>
-#include <wolfssl/wolfcrypt/ecc.h>
+#ifndef WOLF_CRYPT_USER_SETTINGS_H
+#define WOLF_CRYPT_USER_SETTINGS_H
 
-#define MP_VAR(name)                      \
-    mp_int          _##name;                                   \
-    mp_int          *name = MpInitialize(&_##name);
+/* Remove the automatic setting of the default I/O functions EmbedSend()
+    and EmbedReceive(). */
+#define WOLFSSL_USER_IO
 
-// Allocate a mp_int and initialize with the values in a mp_int* initializer
-#define MP_INITIALIZED(name, initializer)                      \
-    MP_VAR(name);                                              \
-    BnToWolf(name, initializer);
+/* Avoid naming conflicts */
+#define NO_OLD_WC_NAMES
 
-#define POINT_CREATE(name, initializer)                   \
-    ecc_point       *name = EcPointInitialized(initializer);
+/* Use stack based fast math for all big integer math */
+#define USE_FAST_MATH
+#define TFM_TIMING_RESISTANT
 
-#define POINT_DELETE(name)                                \
-    wc_ecc_del_point(name);                               \
-    name = NULL;
+/* Expose direct encryption functions */
+#define WOLFSSL_AES_DIRECT
 
-typedef ECC_CURVE_DATA bnCurve_t;
+/* Enable/Disable algorithm support based on TPM implementation header */
+#ifdef ALG_SHA256
+    #define WOLFSSL_SHA256
+#endif
+#if ALG_SHA384 || ALG_SHA512 || defined(WOLFSSL_LIB)
+    #define WOLFSSL_SHA384
+    #define WOLFSSL_SHA512
+#endif
+#if ALG_TDES || defined(WOLFSSL_LIB)
+    #define WOLFSSL_DES_ECB
+#endif
+#if ALG_RSA || defined(WOLFSSL_LIB)
+    /* Turn on RSA key generation functionality */
+    #define WOLFSSL_KEY_GEN
+#endif
+#if ALG_ECC || defined(WOLFSSL_LIB)
+    #define HAVE_ECC
 
-typedef bnCurve_t  *bigCurve;
+    /* Expose additional ECC primitives */
+    #define WOLFSSL_PUBLIC_ECC_ADD_DBL 
+    #define ECC_TIMING_RESISTANT
 
-#define AccessCurveData(E)  (E)
+    /* Enables Shamir calc method */
+    #define ECC_SHAMIR
 
-#define CURVE_INITIALIZED(name, initializer)                        \
-    bnCurve_t      *name = (ECC_CURVE_DATA *)GetCurveData(initializer)
+    /* The TPM only needs low level ECC crypto */
+    #define NO_ECC_SIGN
+    #define NO_ECC_VERIFY
+    #define NO_ECC_SECP
 
-#define CURVE_FREE(E)
-
-#include "TpmToWolfSupport_fp.h"
-
-#define WOLF_ENTER()
-
-#define WOLF_LEAVE()
-
-// This definition would change if there were something to report
-#define MathLibSimulationEnd()
-
-#endif // MATH_LIB == WOLF
+    #undef ECC_BN_P256
+    #undef ECC_SM2_P256
+    #undef ECC_BN_P638
+    #define ECC_BN_P256     NO
+    #define ECC_SM2_P256    NO
+    #define ECC_BN_P638     NO
 
 #endif
+
+/* Disable explicit RSA. The TPM support for RSA is dependent only on TFM */
+#define NO_RSA
+#define NO_RC4
+#define NO_ASN
+
+/* Enable debug wolf library check */
+//#define LIBRARY_COMPATIBILITY_CHECK
+
+#define WOLFSSL_
+
+#endif // WOLF_CRYPT_USER_SETTINGS_H

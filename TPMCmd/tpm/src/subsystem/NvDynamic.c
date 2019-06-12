@@ -459,7 +459,7 @@ NvRamTestSpaceIndex(
     UINT32           size           // IN: size of the data to be added to RAM
     )
 {
-    UINT32          remaining = RAM_ORDERLY_END - NvRamGetEnd();
+    UINT32          remaining = (UINT32)(RAM_ORDERLY_END - NvRamGetEnd());
     UINT32          needed = sizeof(NV_RAM_HEADER) + size;
 //
     // NvRamGetEnd points to the next available byte. 
@@ -572,7 +572,7 @@ NvDeleteRAM(
     nextNode = nodeAddress + size;
 
     // Copy the data
-    MemoryCopy(nodeAddress, nextNode, lastUsed - nextNode);
+    MemoryCopy(nodeAddress, nextNode, (int)(lastUsed - nextNode));
 
     // Clear out the reclaimed space
     MemorySet(lastUsed - size, 0, size);
@@ -1740,8 +1740,7 @@ NvSetStartupAttributes(
 //
 //  It is a prerequisite that NV be available for writing before this
 //  function is called.
-
-void
+BOOL
 NvEntityStartup(
     STARTUP_TYPE     type           // IN: start up type
     )
@@ -1761,7 +1760,7 @@ NvEntityStartup(
 
     // If recovering from state save, do nothing else
     if(type == SU_RESUME)
-        return;
+        return TRUE;
     // Iterate all the NV Index to clear the locks
     while((currentAddr = NvNextIndex(&nvHandle, &iter)) != 0)
     {
@@ -1802,7 +1801,7 @@ NvEntityStartup(
             UINT64_TO_BYTE_ARRAY(counter, currentRamAddr + sizeof(NV_RAM_HEADER));
         }
     }
-    return;
+    return TRUE;
 }
 
 //*** NvCapGetCounterAvail()
@@ -1831,7 +1830,7 @@ NvCapGetCounterAvail(
             availNVSpace -= reserved;
     }
     // Compute the available space in RAM
-    availRAMSpace = RAM_ORDERLY_END - NvRamGetEnd();
+    availRAMSpace = (int)(RAM_ORDERLY_END - NvRamGetEnd());
 
     // Return the min of counter number in NV and in RAM
     if(availNVSpace / NV_INDEX_COUNTER_SIZE
