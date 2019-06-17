@@ -62,6 +62,12 @@ ADD_COMPILER_FLAG([-Wno-error=parentheses])
 ADD_COMPILER_FLAG([-Wno-error=pointer-to-int-cast])
 ADD_COMPILER_FLAG([-Wno-error=missing-braces])
 ADD_COMPILER_FLAG([-Wno-error=unused-result])
+dnl Enable to build in release mode with symbols.
+ADD_COMPILER_FLAG([-DNDEBUG])
+ADD_COMPILER_FLAG([-O3])
+ADD_COMPILER_FLAG([-g])
+dnl Work around for braces around scalar initializer error.
+ADD_COMPILER_FLAG([-DUSE_BIT_FIELD_STRUCTURES=YES])
 
 ADD_LINK_FLAG([-Wl,--no-undefined])
 ADD_LINK_FLAG([-Wl,-z,noexecstack])
