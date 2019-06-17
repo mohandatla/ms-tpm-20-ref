@@ -68,6 +68,8 @@ ADD_COMPILER_FLAG([-O3])
 ADD_COMPILER_FLAG([-g])
 dnl Work around for braces around scalar initializer error.
 ADD_COMPILER_FLAG([-DUSE_BIT_FIELD_STRUCTURES=YES])
+dnl Enabled to get entropy from hardware parameters.
+ADD_COMPILER_FLAG([-DUSE_DEVICE_PERSISTENT_IDENTITY])
 
 ADD_LINK_FLAG([-Wl,--no-undefined])
 ADD_LINK_FLAG([-Wl,-z,noexecstack])
