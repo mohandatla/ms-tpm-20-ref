@@ -44,6 +44,7 @@ AC_CONFIG_FILES([Makefile])
 AC_SUBST([DISTCHECK_CONFIGURE_FLAGS],[$ac_configure_args])
 
 PKG_CHECK_MODULES([LIBCRYPTO], [libcrypto])
+PKG_CHECK_MODULES([LIBUDEV], [libudev])
 AX_PTHREAD([], [AC_MSG_ERROR([requires pthread])])
 
 AC_DEFINE([HASH_LIB], [Ossl], [Crypto lib for hash algorithms])
@@ -70,6 +71,8 @@ dnl Work around for braces around scalar initializer error.
 ADD_COMPILER_FLAG([-DUSE_BIT_FIELD_STRUCTURES=YES])
 dnl Enabled to get entropy from hardware parameters.
 ADD_COMPILER_FLAG([-DUSE_DEVICE_PERSISTENT_IDENTITY])
+dnl It is needed for reading disk serial number.
+ADD_COMPILER_FLAG([-ludev])
 
 ADD_LINK_FLAG([-Wl,--no-undefined])
 ADD_LINK_FLAG([-Wl,-z,noexecstack])

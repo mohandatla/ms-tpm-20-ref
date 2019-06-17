@@ -46,6 +46,8 @@
 #include <netinet/in.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <libudev.h>
+#include <sys/stat.h>
 
 // This value is used to store persistent entropy for the device by deriving from hardware parameters.
 // Entropy is the size of a the state. The state is the size of the key
@@ -116,8 +118,80 @@ static int32_t GetMacAddress(unsigned char* macAddress, const unsigned int macAd
 
 static int32_t GetDiskSerialNumber(unsigned char* diskSerialNumber, const unsigned int diskSerialNumberSize)
 {
-    // todo
-    return 0;
+    // udev. context object.
+    struct udev *ud = NULL;
+    // stat buffer to store the device stat information.
+    struct stat statbuf;
+    struct udev_device *device = NULL;
+    struct udev_list_entry *entry = NULL;
+    int32_t result = -1;
+
+    ud = udev_new();
+    if (NULL == ud) {
+        printf("Failed to create udev.\n");
+        return result;
+    }
+    else {
+
+        const unsigned int diskDeviceNamesSize = 2;
+        const char *diskDeviceNames[] = {
+            "/dev/sda", // primary hard disk.
+            "/dev/mmcblk0" // primary eMMC disk.
+        };
+
+        unsigned int i = 0;
+        while (i < diskDeviceNamesSize)
+        {
+            if (0 != stat(diskDeviceNames[i], &statbuf)) {
+                printf("Failed to stat %s.\n", diskDeviceNames[i]);
+            }
+            else
+            {
+                printf("succesfully to stat %s.\n", diskDeviceNames[i]);
+                break;
+            }
+            i++;
+        }
+
+        if (i == diskDeviceNamesSize)
+        {
+            goto Cleanup;
+        }
+
+        const char blockDeviceType = 'b';
+        device = udev_device_new_from_devnum(ud, blockDeviceType, statbuf.st_rdev);
+        if (NULL == device)
+        {
+            printf("Failed to open %s.\n", diskDeviceNames[i]);
+            goto Cleanup;
+        }
+        else
+        {
+            entry = udev_device_get_properties_list_entry(device);
+            while (NULL != entry)
+            {
+                if (0 == strcmp(udev_list_entry_get_name(entry),
+                    "ID_SERIAL")) 
+                {
+                    break;
+                }
+
+                entry = udev_list_entry_get_next(entry);
+            }
+
+            const char* serialNumber = udev_list_entry_get_value(entry);
+            size_t serialNumberLength = strlen(serialNumber);
+            size_t dataLengthToCopy = serialNumberLength < diskSerialNumberSize ? serialNumberLength : diskSerialNumberSize;
+            memcpy(diskSerialNumber, serialNumber, dataLengthToCopy);
+            printf("Serial ID: %s\n", serialNumber);
+
+            udev_device_unref(device);
+        }
+
+Cleanup:
+        (void)udev_unref(ud);
+        return result;
+    }
 }
 
 //*** GetDeviceEntropy()
