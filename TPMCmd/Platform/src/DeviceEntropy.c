@@ -59,7 +59,10 @@ const unsigned int MAC_ADDRESS_MAXIMUM_SIZE = 6;
 static bool isEntropySet = false;
 static BYTE devicePersistentEntropy[ENTROPY_MAX_SIZE_BYTES];
 
-static int32_t GetMacAddress(unsigned char* macAddress, const unsigned int macAddressSize)
+// Read mac address of the device and copy over to the given buffer.
+// Returns 0 for success and -1 for error.
+
+static int getMacAddress(unsigned char* macAddress, const unsigned int macAddressSize)
 {
     struct ifreq interfaceRequest;
     struct ifconf interfaceConfiguration;
@@ -110,25 +113,27 @@ static int32_t GetMacAddress(unsigned char* macAddress, const unsigned int macAd
         unsigned int size = macAddressSize <= MAC_ADDRESS_MAXIMUM_SIZE ? macAddressSize : MAC_ADDRESS_MAXIMUM_SIZE;
         memset(macAddress, 0, size);
         memcpy(macAddress, interfaceRequest.ifr_hwaddr.sa_data, size);
+        printf("\nsuccessfully read mac address.");
     }
 
     close(inetSocket);
     return result;
 }
 
-static int32_t GetDiskSerialNumber(unsigned char* diskSerialNumber, const unsigned int diskSerialNumberSize)
+// Read primary harddisk/emmc disk serial id from device and copy over to the given buffer.
+// Returns 0 for success and -1 for error.
+
+static int getDiskSerialNumber(unsigned char* diskSerialNumber, const unsigned int diskSerialNumberSize)
 {
-    // udev. context object.
     struct udev *ud = NULL;
-    // stat buffer to store the device stat information.
     struct stat statbuf;
     struct udev_device *device = NULL;
     struct udev_list_entry *entry = NULL;
-    int32_t result = -1;
+    int result = -1;
 
     ud = udev_new();
     if (NULL == ud) {
-        printf("Failed to create udev.\n");
+        printf("\nFailed to create udev.\n");
         return result;
     }
     else {
@@ -143,11 +148,11 @@ static int32_t GetDiskSerialNumber(unsigned char* diskSerialNumber, const unsign
         while (i < diskDeviceNamesSize)
         {
             if (0 != stat(diskDeviceNames[i], &statbuf)) {
-                printf("Failed to stat %s.\n", diskDeviceNames[i]);
+                printf("\nFailed to stat %s.\n", diskDeviceNames[i]);
             }
             else
             {
-                printf("succesfully to stat %s.\n", diskDeviceNames[i]);
+                printf("\nsuccesfully stat %s.", diskDeviceNames[i]);
                 break;
             }
             i++;
@@ -162,7 +167,7 @@ static int32_t GetDiskSerialNumber(unsigned char* diskSerialNumber, const unsign
         device = udev_device_new_from_devnum(ud, blockDeviceType, statbuf.st_rdev);
         if (NULL == device)
         {
-            printf("Failed to open %s.\n", diskDeviceNames[i]);
+            printf("\nFailed to open %s.\n", diskDeviceNames[i]);
             goto Cleanup;
         }
         else
@@ -183,9 +188,9 @@ static int32_t GetDiskSerialNumber(unsigned char* diskSerialNumber, const unsign
             size_t serialNumberLength = strlen(serialNumber);
             size_t dataLengthToCopy = serialNumberLength < diskSerialNumberSize ? serialNumberLength : diskSerialNumberSize;
             memcpy(diskSerialNumber, serialNumber, dataLengthToCopy);
-            printf("Serial ID: %s\n", serialNumber);
 
             udev_device_unref(device);
+            result = 0;
         }
 
 Cleanup:
@@ -207,24 +212,23 @@ GetDeviceEntropy(
     uint32_t             amount             // amount requested
 )
 {
-    int32_t result = 0;
 
     if(!isEntropySet)
     {
         memset(devicePersistentEntropy, 0, ENTROPY_MAX_SIZE_BYTES);
 
-        if(GetMacAddress(devicePersistentEntropy, MAC_ADDRESS_MAXIMUM_SIZE) == -1)
+        if(getMacAddress(devicePersistentEntropy, MAC_ADDRESS_MAXIMUM_SIZE) == -1)
         {
-            printf("error occurred in retrieving mac address.\n");
+            printf("\nerror occurred in retrieving mac address.\n");
         }
         else
         {
             isEntropySet = true;
         }
 
-        if(GetDiskSerialNumber(&devicePersistentEntropy[MAC_ADDRESS_MAXIMUM_SIZE], ENTROPY_MAX_SIZE_BYTES - MAC_ADDRESS_MAXIMUM_SIZE) == -1)
+        if(getDiskSerialNumber(&devicePersistentEntropy[MAC_ADDRESS_MAXIMUM_SIZE], ENTROPY_MAX_SIZE_BYTES - MAC_ADDRESS_MAXIMUM_SIZE) == -1)
         {
-            printf("error occurred in retrieving disk serial.\n");
+            printf("\nerror occurred in retrieving disk serial.\n");
         }
         else
         {
@@ -239,22 +243,20 @@ GetDeviceEntropy(
 
     if(amount == 0)
     {
-        printf("amount=0 called.\n");
         return 0;
     }
     else
     {
         if(amount > ENTROPY_MAX_SIZE_BYTES)
         {
-            printf("amount>ENTROPY_MAX_SIZE_BYTES called.\n");
-            result = -1;
+            printf("\namount>ENTROPY_MAX_SIZE_BYTES called.\n");
+            return -1;
         }
         else
         {
             memcpy(entropy, devicePersistentEntropy, amount);
-            result = amount;
+            return amount;
         }
     }
-    return result;
 }
 #endif
