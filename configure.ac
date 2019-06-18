@@ -43,8 +43,19 @@ AM_INIT_AUTOMAKE([foreign subdir-objects])
 AC_CONFIG_FILES([Makefile])
 AC_SUBST([DISTCHECK_CONFIGURE_FLAGS],[$ac_configure_args])
 
+dnl By enabling this feature tpm simulator gets device persistent entropy derived from hardware.
+dnl It is enabled only for linux devices.
+dnl Note that the entropy is not derived from secure hardware source.
+
+AC_ARG_ENABLE(usedevicepersistententropy,
+    AS_HELP_STRING([--enable-usedevicepersistententropy],
+    [tpm simulator gets device persistent entropy derived from hardware. Entropy is not derived from secure source.]))
+
 PKG_CHECK_MODULES([LIBCRYPTO], [libcrypto])
-PKG_CHECK_MODULES([LIBUDEV], [libudev])
+AS_IF([test "x$enable_usedevicepersistententropy" = "xyes"], [
+    PKG_CHECK_MODULES([LIBUDEV], [libudev])
+    [ADDIOTIONAL_LIBS="-ludev"]
+])
 AX_PTHREAD([], [AC_MSG_ERROR([requires pthread])])
 
 AC_DEFINE([HASH_LIB], [Ossl], [Crypto lib for hash algorithms])
@@ -64,15 +75,17 @@ ADD_COMPILER_FLAG([-Wno-error=pointer-to-int-cast])
 ADD_COMPILER_FLAG([-Wno-error=missing-braces])
 ADD_COMPILER_FLAG([-Wno-error=unused-result])
 dnl Enable to build in release mode with symbols.
-ADD_COMPILER_FLAG([-DNDEBUG])
-ADD_COMPILER_FLAG([-O3])
-ADD_COMPILER_FLAG([-g])
-dnl Work around for braces around scalar initializer error.
-ADD_COMPILER_FLAG([-DUSE_BIT_FIELD_STRUCTURES=YES])
-dnl Enabled to get entropy from hardware parameters.
-ADD_COMPILER_FLAG([-DUSE_DEVICE_PERSISTENT_IDENTITY])
-dnl It is needed for reading disk serial number.
-ADD_COMPILER_FLAG([-ludev])
+
+AS_IF([test "x$enable_usedevicepersistententropy" = "xyes"], [
+    dnl enable release mode with symbols.
+    ADD_COMPILER_FLAG([-DNDEBUG])
+    ADD_COMPILER_FLAG([-O3])
+    ADD_COMPILER_FLAG([-g])
+    dnl Work around for GCC braces around scalar initializer error.
+    ADD_COMPILER_FLAG([-DUSE_BIT_FIELD_STRUCTURES=YES])
+    ADD_COMPILER_FLAG([-DUSE_DEVICE_PERSISTENT_ENTROPY])
+    AC_SUBST(ADDIOTIONAL_LIBS)
+])
 
 ADD_LINK_FLAG([-Wl,--no-undefined])
 ADD_LINK_FLAG([-Wl,-z,noexecstack])

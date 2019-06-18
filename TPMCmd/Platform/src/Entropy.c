@@ -60,7 +60,7 @@ extern uint32_t        lastEntropy;
 
 //** Functions
 
-#if !defined(USE_DEVICE_PERSISTENT_IDENTITY)
+#if !defined(USE_DEVICE_PERSISTENT_ENTROPY)
 //*** rand32()
 // Local function to get a 32-bit random number
 static uint32_t
@@ -101,7 +101,7 @@ _plat__GetEntropy(
 )
 {
 // It gets entropy by reading device hardware parameters 
-#if defined(USE_DEVICE_PERSISTENT_IDENTITY)
+#if !defined(_MSC_VER) && defined(USE_DEVICE_PERSISTENT_ENTROPY)
     return GetDeviceEntropy(entropy, amount);
 #else
     uint32_t            rndNum;

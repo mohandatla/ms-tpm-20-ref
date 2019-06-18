@@ -46,13 +46,12 @@
 #include "PlatformData.h"
 #include "Platform_fp.h"
 
-#if !defined(_MSC_VER) && defined(USE_DEVICE_PERSISTENT_IDENTITY)
-//*** GetDeviceEntropy()
-// This function is used to get device entropy from device hardware parameters.
+#if !defined(_MSC_VER) && defined(USE_DEVICE_PERSISTENT_ENTROPY)
+// Get device entropy from device hardware parameters.
 //  Return Type: int32_t
 //  < 0        failure to get hardware entropy.
 // >= 0        the returned amount of entropy (bytes)
-// Note that, it is only used to get persistent identity, it is unsecure to rely on this entropy.
+// Note that, entropy is not derived from secure hardware source.
 LIB_EXPORT int32_t
 GetDeviceEntropy(
     unsigned char       *entropy,           // output buffer

@@ -33,7 +33,7 @@
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#if !defined(_MSC_VER) && defined(USE_DEVICE_PERSISTENT_IDENTITY)
+#if !defined(_MSC_VER) && defined(USE_DEVICE_PERSISTENT_ENTROPY)
 #define _CRT_RAND_S
 #include <stdlib.h>
 #include <memory.h>
@@ -49,7 +49,7 @@
 #include <libudev.h>
 #include <sys/stat.h>
 
-// This value is used to store persistent entropy for the device by deriving from hardware parameters.
+// This value is used to store persistent entropy derived from hardware parameters.
 // Entropy is the size of a the state. The state is the size of the key
 // plus the IV. The IV is a block. If Key = 256 and Block = 128 then State = 384
 // Currently simulator supports key size 256 or 128
@@ -216,13 +216,13 @@ Cleanup:
     }
 }
 
-//*** GetDeviceEntropy()
-// This function is used to get device entropy from device hardware parameters.
+
+// Get device persistent entropy from hardware parameters.
 //  Return Type: int32_t
 //  < 0        failure to get hardware entropy.
 // >= 0        the returned amount of entropy (bytes)
-// Note that, it is only used to get persistent identity, it is unsecure to rely on this entropy.
-// pre-requisites - assumes that MAC address is present for the device.
+// Note that, the entropy is not derived from secure hardware source.
+// pre-requisites - assumes that MAC address or disk device (i.e. /dev/sda or /dev/mmcblk0) present on the device.
 int32_t
 GetDeviceEntropy(
     unsigned char       *entropy,           // output buffer
