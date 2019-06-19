@@ -61,12 +61,19 @@ HierarchyPreInstall_Init(
     gp.PPSeed.t.size = sizeof(gp.PPSeed.t.buffer);
 #if (defined USE_PLATFORM_EPS) && (USE_PLATFORM_EPS != NO)
     _plat__GetEPS(gp.EPSeed.t.size, gp.EPSeed.t.buffer);
+#elif (defined(USE_DEVICE_ID))
+    _simulator_deviceID_GetSeed(gp.EPSeed.t.size, gp.EPSeed.t.buffer, EPS_CREATION);
 #else
     CryptRandomGenerate(gp.EPSeed.t.size, gp.EPSeed.t.buffer);
 #endif
+
+#if defined(USE_DEVICE_ID)
+    _simulator_deviceID_GetSeed(gp.SPSeed.t.size, gp.SPSeed.t.buffer, PPS_CREATION);
+    _simulator_deviceID_GetSeed(gp.PPSeed.t.size, gp.PPSeed.t.buffer, SPS_CREATION);
+#else
     CryptRandomGenerate(gp.SPSeed.t.size, gp.SPSeed.t.buffer);
     CryptRandomGenerate(gp.PPSeed.t.size, gp.PPSeed.t.buffer);
-
+#endif
     // Initialize owner, endorsement and lockout authorization
     gp.ownerAuth.t.size = 0;
     gp.endorsementAuth.t.size = 0;

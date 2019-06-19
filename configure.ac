@@ -43,18 +43,18 @@ AM_INIT_AUTOMAKE([foreign subdir-objects])
 AC_CONFIG_FILES([Makefile])
 AC_SUBST([DISTCHECK_CONFIGURE_FLAGS],[$ac_configure_args])
 
-dnl By enabling this feature tpm simulator gets device persistent entropy derived from hardware.
+dnl By enabling this feature tpm simulator gets seeds derived from hardware parameters.
 dnl It is enabled only for linux devices.
-dnl Note that the entropy is not derived from secure hardware source.
+dnl Note that the seeds are not derived from secure hardware source.
 
-AC_ARG_ENABLE(usedevicepersistententropy,
-    AS_HELP_STRING([--enable-usedevicepersistententropy],
-    [tpm simulator gets device persistent entropy derived from hardware. Entropy is not derived from secure source.]))
+AC_ARG_ENABLE(usedeviceid,
+    AS_HELP_STRING([--enable-usedeviceid],
+    [tpm simulator get seeds derived from hardware parameters. Seeds are not derived from secure hardware source.]))
 
 PKG_CHECK_MODULES([LIBCRYPTO], [libcrypto])
-AS_IF([test "x$enable_usedevicepersistententropy" = "xyes"], [
+AS_IF([test "x$enable_usedeviceid" = "xyes"], [
     PKG_CHECK_MODULES([LIBUDEV], [libudev])
-    [ADDIOTIONAL_LIBS="-ludev"]
+    [ADDITIONAL_LIBS="-ludev"]
 ])
 AX_PTHREAD([], [AC_MSG_ERROR([requires pthread])])
 
@@ -76,15 +76,15 @@ ADD_COMPILER_FLAG([-Wno-error=missing-braces])
 ADD_COMPILER_FLAG([-Wno-error=unused-result])
 dnl Enable to build in release mode with symbols.
 
-AS_IF([test "x$enable_usedevicepersistententropy" = "xyes"], [
+AS_IF([test "x$enable_usedeviceid" = "xyes"], [
     dnl enable release mode with symbols.
     ADD_COMPILER_FLAG([-DNDEBUG])
     ADD_COMPILER_FLAG([-O3])
     ADD_COMPILER_FLAG([-g])
     dnl Work around for GCC braces around scalar initializer error.
     ADD_COMPILER_FLAG([-DUSE_BIT_FIELD_STRUCTURES=YES])
-    ADD_COMPILER_FLAG([-DUSE_DEVICE_PERSISTENT_ENTROPY])
-    AC_SUBST(ADDIOTIONAL_LIBS)
+    ADD_COMPILER_FLAG([-DUSE_DEVICE_ID])
+    AC_SUBST(ADDITIONAL_LIBS)
 ])
 
 ADD_LINK_FLAG([-Wl,--no-undefined])

@@ -33,13 +33,10 @@
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#if !defined(_MSC_VER) && defined(USE_DEVICE_PERSISTENT_ENTROPY)
-#define _CRT_RAND_S
+#if defined(USE_DEVICE_ID)
 #include <stdlib.h>
 #include <memory.h>
 #include <time.h>
-#include "Platform.h"
-
 #include <unistd.h>
 #include <net/if.h> 
 #include <sys/ioctl.h>
@@ -49,28 +46,22 @@
 #include <libudev.h>
 #include <sys/stat.h>
 
-// This value is used to store persistent entropy derived from hardware parameters.
-// Entropy is the size of a the state. The state is the size of the key
-// plus the IV. The IV is a block. If Key = 256 and Block = 128 then State = 384
-// Currently simulator supports key size 256 or 128
-#define ENTROPY_MAX_SIZE_BYTES 48
+#include "Tpm.h"
 
+#define DEVICEID_SIZE 48
+// Definition for Device ID value.
+TPM2B_TYPE(DEVICEID, DEVICEID_SIZE);
 const unsigned int MAC_ADDRESS_MAXIMUM_SIZE = 6;
-static bool isEntropySet = false;
-static unsigned char devicePersistentEntropy[ENTROPY_MAX_SIZE_BYTES];
+
+// This value is used to store device id derived from hardware parameters.
+static TPM2B_DEVICEID deviceID = {0};
+static bool isDeviceIDSet = false;
 
 // Read mac address of the device and copy over to the given buffer.
 // Returns 0 for success and -1 for error.
 
-static int getMacAddress(unsigned char* macAddress, const unsigned int macAddressSize)
+static int getMacAddress()
 {
-
-    if ((macAddress == NULL) || (macAddressSize == 0))
-    {
-        fprintf(stderr, "Invalid input arguments.");
-        return -1;
-    }
-
     struct ifreq interfaceRequest = {0};
     struct ifconf interfaceConfiguration = {0};
     char interfaceConfigurationBuffer[1024] = {0};
@@ -117,9 +108,8 @@ static int getMacAddress(unsigned char* macAddress, const unsigned int macAddres
 
     if (result == 0)
     {
-        unsigned int size = macAddressSize <= MAC_ADDRESS_MAXIMUM_SIZE ? macAddressSize : MAC_ADDRESS_MAXIMUM_SIZE;
-        memset(macAddress, 0, size);
-        memcpy(macAddress, interfaceRequest.ifr_hwaddr.sa_data, size);
+        unsigned int size = deviceID.t.size <= MAC_ADDRESS_MAXIMUM_SIZE ? deviceID.t.size : MAC_ADDRESS_MAXIMUM_SIZE;
+        memcpy(deviceID.t.buffer, interfaceRequest.ifr_hwaddr.sa_data, size);
     }
 
     close(inetSocket);
@@ -129,7 +119,7 @@ static int getMacAddress(unsigned char* macAddress, const unsigned int macAddres
 // Read primary harddisk/emmc disk serial id from device and copy over to the given buffer.
 // Returns 0 for success and -1 for error.
 
-static int getDiskSerialNumber(unsigned char* diskSerialNumber, const unsigned int diskSerialNumberSize)
+static int getDiskSerialNumber()
 {
     struct udev *ud = NULL;
     struct stat statbuf;
@@ -199,8 +189,14 @@ static int getDiskSerialNumber(unsigned char* diskSerialNumber, const unsigned i
 
             const char* serialNumber = udev_list_entry_get_value(entry);
             size_t serialNumberLength = strlen(serialNumber);
-            size_t dataLengthToCopy = serialNumberLength < diskSerialNumberSize ? serialNumberLength : diskSerialNumberSize;
-            memcpy(diskSerialNumber, serialNumber, dataLengthToCopy);
+
+            size_t dataCopyLength = deviceID.t.size - MAC_ADDRESS_MAXIMUM_SIZE;
+            if (serialNumberLength < dataCopyLength)
+            {
+                dataCopyLength = serialNumberLength;
+            }
+
+            memcpy(deviceID.t.buffer, serialNumber, dataCopyLength);
 
             result = 0;
         }
@@ -217,63 +213,63 @@ Cleanup:
 }
 
 
-// Get device persistent entropy from hardware parameters.
-//  Return Type: int32_t
-//  < 0        failure to get hardware entropy.
-// >= 0        the returned amount of entropy (bytes)
-// Note that, the entropy is not derived from secure hardware source.
+// Get device id from hardware parameters.
+// Note that, the device id is not derived from secure hardware source.
 // pre-requisites - assumes that MAC address or disk device (i.e. /dev/sda or /dev/mmcblk0) present on the device.
-int32_t
-GetDeviceEntropy(
-    unsigned char       *entropy,           // output buffer
-    uint32_t             amount             // amount requested
-)
+TPM_RC GetDeviceID()
 {
-
-    if(!isEntropySet)
+    if(!isDeviceIDSet)
     {
-        memset(devicePersistentEntropy, 0, ENTROPY_MAX_SIZE_BYTES);
-
-        if(getMacAddress(devicePersistentEntropy, MAC_ADDRESS_MAXIMUM_SIZE) == -1)
+        if(getMacAddress() == -1)
         {
             fprintf(stderr, "\nerror occurred in retrieving mac address.\n");
         }
         else
         {
-            isEntropySet = true;
+            isDeviceIDSet = true;
         }
 
-        if(getDiskSerialNumber(&devicePersistentEntropy[MAC_ADDRESS_MAXIMUM_SIZE], ENTROPY_MAX_SIZE_BYTES - MAC_ADDRESS_MAXIMUM_SIZE) == -1)
+        if(getDiskSerialNumber() == -1)
         {
             fprintf(stderr, "\nerror occurred in retrieving disk serial.\n");
         }
         else
         {
-            isEntropySet = true;
+            isDeviceIDSet = true;
         }
 
-        if(!isEntropySet)
+        if(!isDeviceIDSet)
         {
-            return -1;
+            return TPM_RC_FAILURE;
         }
     }
 
-    if(amount == 0)
-    {
-        return 0;
-    }
-    else
-    {
-        if(amount > ENTROPY_MAX_SIZE_BYTES)
-        {
-            fprintf(stderr, "\namount>ENTROPY_MAX_SIZE_BYTES called.\n");
-            return -1;
-        }
-        else
-        {
-            memcpy(entropy, devicePersistentEntropy, amount);
-            return amount;
-        }
-    }
+    return TPM_RC_SUCCESS;
 }
+
+void _simulator_deviceID_GetSeed(size_t size, uint8_t *seed, const TPM2B *purpose)
+{
+    RAND_STATE rand;
+
+    TPM_RC result = GetDeviceID();
+    if(result != TPM_RC_SUCCESS)
+    {
+        LOG_FAILURE(FATAL_ERROR_INTERNAL);
+        return;
+    }
+    
+    result = DRBG_InstantiateSeeded(&rand.drbg, &deviceID.b, purpose, NULL, NULL);
+    if(result != TPM_RC_SUCCESS)
+    {
+        LOG_FAILURE(FATAL_ERROR_INTERNAL);
+        return;
+    }
+
+    if(DRBG_Generate(&rand, seed, size) == 0)
+    {
+        LOG_FAILURE(FATAL_ERROR_INTERNAL);
+    }
+    return;
+}
+
 #endif

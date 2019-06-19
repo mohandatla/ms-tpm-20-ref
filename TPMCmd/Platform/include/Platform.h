@@ -46,17 +46,4 @@
 #include "PlatformData.h"
 #include "Platform_fp.h"
 
-#if !defined(_MSC_VER) && defined(USE_DEVICE_PERSISTENT_ENTROPY)
-// Get device entropy from device hardware parameters.
-//  Return Type: int32_t
-//  < 0        failure to get hardware entropy.
-// >= 0        the returned amount of entropy (bytes)
-// Note that, entropy is not derived from secure hardware source.
-LIB_EXPORT int32_t
-GetDeviceEntropy(
-    unsigned char       *entropy,           // output buffer
-    uint32_t             amount             // amount requested
-);
-#endif
-
 #endif  // _PLATFORM_H_

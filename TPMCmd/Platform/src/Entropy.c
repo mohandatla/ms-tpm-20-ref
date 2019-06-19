@@ -60,7 +60,6 @@ extern uint32_t        lastEntropy;
 
 //** Functions
 
-#if !defined(USE_DEVICE_PERSISTENT_ENTROPY)
 //*** rand32()
 // Local function to get a 32-bit random number
 static uint32_t
@@ -84,7 +83,6 @@ rand32(
 #endif
     return rndNum;
 }
-#endif
 
 //*** _plat__GetEntropy()
 // This function is used to get available hardware entropy. In a hardware
@@ -100,10 +98,6 @@ _plat__GetEntropy(
     uint32_t             amount             // amount requested
 )
 {
-// It gets entropy by reading device hardware parameters 
-#if !defined(_MSC_VER) && defined(USE_DEVICE_PERSISTENT_ENTROPY)
-    return GetDeviceEntropy(entropy, amount);
-#else
     uint32_t            rndNum;
     int32_t             ret;
 //
@@ -157,5 +151,4 @@ _plat__GetEntropy(
         }
     }
     return ret;
-#endif
 }
