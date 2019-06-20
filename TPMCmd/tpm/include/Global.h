@@ -1436,8 +1436,6 @@ extern  const  COMMAND_ATTRIBUTES    s_commandAttributes[];
 
 #if defined(USE_DEVICE_ID)
 TPM2B_STRING(EPS_CREATION, "EPS Creation");
-TPM2B_STRING(PPS_CREATION, "PPS Creation");
-TPM2B_STRING(SPS_CREATION, "SPS Creation");
 #endif
 
 #endif // GLOBAL_H
