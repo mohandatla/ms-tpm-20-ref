@@ -43,6 +43,7 @@
 #include <stdint.h>
 #include <ctype.h>
 #include <string.h>
+#include <stdbool.h>
 #include "BaseTypes.h"
 
 #ifdef _MSC_VER
@@ -88,6 +89,12 @@ Usage(
     fprintf(stderr,
               "%s PortNum - Starts the TPM server listening on port PortNum\n",
               pszProgramName);
+    fprintf(stderr,
+              "%s -m - Starts the TPM server in manfacturing mode i.e. default.\n",
+              pszProgramName);
+    fprintf(stderr,
+              "%s -m- - Starts the TPM server in non manfacturing mode.\n",
+              pszProgramName);
     fprintf(stderr, "%s ?       - This message\n", pszProgramName);
     exit(1);
 }
@@ -102,6 +109,8 @@ main(
     )
 {
     int portNum = DEFAULT_TPM_PORT;
+    bool runTpmInManufacturingMode = true;
+
     if(argc > 2)
     {
         Usage(argv[0]);
@@ -113,31 +122,59 @@ main(
         {
             Usage(argv[0]);
         }
-        portNum = atoi(argv[1]);
-        if(portNum <= 0 || portNum > 65535)
+        else if(strcmp(argv[1], "-m") == 0)
         {
-            Usage(argv[0]);
+            runTpmInManufacturingMode = false;
+        }
+        else if(strcmp(argv[1], "-m-") == 0)
+        {
+            runTpmInManufacturingMode = false;
+        }
+        else
+        {
+            portNum = atoi(argv[1]);
+            if(portNum <= 0 || portNum > 65535)
+            {
+                Usage(argv[0]);
+            }
         }
     }
-    _plat__NVEnable(NULL);
 
-    if(TPM_Manufacture(1) != 0)
+    if(runTpmInManufacturingMode)
     {
-        exit(1);
+        if(_plat__IsNvFilePresent() != 0)
+        {
+            _plat__NVEnable(NULL);
+
+            if(TPM_Manufacture(1) != 0)
+            {
+                exit(1);
+            }
+        }
+        _plat__NVDisable();
     }
-    // Coverage test - repeated manufacturing attempt
-    if(TPM_Manufacture(0) != 1)
+    else
     {
-        exit(2);
+        _plat__NVEnable(NULL);
+
+        if(TPM_Manufacture(1) != 0)
+        {
+            exit(1);
+        }
+        // Coverage test - repeated manufacturing attempt
+        if(TPM_Manufacture(0) != 1)
+        {
+            exit(2);
+        }
+        // Coverage test - re-manufacturing
+        TPM_TearDown();
+        if(TPM_Manufacture(1) != 0)
+        {
+            exit(3);
+        }
+        // Disable NV memory
+        _plat__NVDisable();
     }
-    // Coverage test - re-manufacturing
-    TPM_TearDown();
-    if(TPM_Manufacture(1) != 0)
-    {
-        exit(3);
-    }
-    // Disable NV memory
-    _plat__NVDisable();
 
     StartTcpServer(portNum);
     return EXIT_SUCCESS;
