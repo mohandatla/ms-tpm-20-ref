@@ -61,8 +61,6 @@ HierarchyPreInstall_Init(
     gp.PPSeed.t.size = sizeof(gp.PPSeed.t.buffer);
 #if (defined USE_PLATFORM_EPS) && (USE_PLATFORM_EPS != NO)
     _plat__GetEPS(gp.EPSeed.t.size, gp.EPSeed.t.buffer);
-#elif defined(USE_DEVICE_ID)
-    _simulator_deviceID_GetSeed(gp.EPSeed.t.size, gp.EPSeed.t.buffer, EPS_CREATION);
 #else
     CryptRandomGenerate(gp.EPSeed.t.size, gp.EPSeed.t.buffer);
 #endif

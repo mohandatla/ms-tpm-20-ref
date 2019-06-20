@@ -33,7 +33,7 @@
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#if defined(USE_DEVICE_ID)
+#if !defined(_MSC_VER) && defined(USE_PLATFORM_EPS)
 #include <stdlib.h>
 #include <memory.h>
 #include <time.h>
@@ -42,7 +42,6 @@
 #include <sys/ioctl.h>
 #include <netinet/in.h>
 #include <stdio.h>
-#include <stdbool.h>
 #include <libudev.h>
 #include <sys/stat.h>
 
@@ -56,7 +55,7 @@ const unsigned int MAC_ADDRESS_MAXIMUM_SIZE = 6;
 
 // This value is used to store device id derived from hardware parameters.
 static TPM2B_DEVICEID deviceID = {0};
-static bool isDeviceIDSet = false;
+static BOOL isDeviceIDSet = FALSE;
 
 // Read mac address of the device and copy over to the given buffer.
 // Returns 0 for success and -1 for error.
@@ -217,9 +216,9 @@ Cleanup:
 // Get device id from hardware parameters.
 // Note that, the device id is not derived from secure hardware source.
 // pre-requisites - assumes that MAC address or disk device (i.e. /dev/sda or /dev/mmcblk0) present on the device.
-TPM_RC GetDeviceID()
+TPM_RC getDeviceID()
 {
-    if(!isDeviceIDSet)
+    if(isDeviceIDSet == FALSE)
     {
         if(getMacAddress() == -1)
         {
@@ -227,7 +226,7 @@ TPM_RC GetDeviceID()
         }
         else
         {
-            isDeviceIDSet = true;
+            isDeviceIDSet = TRUE;
         }
 
         if(getDiskSerialNumber() == -1)
@@ -236,10 +235,10 @@ TPM_RC GetDeviceID()
         }
         else
         {
-            isDeviceIDSet = true;
+            isDeviceIDSet = TRUE;
         }
 
-        if(!isDeviceIDSet)
+        if(isDeviceIDSet == FALSE)
         {
             return TPM_RC_FAILURE;
         }
@@ -248,11 +247,11 @@ TPM_RC GetDeviceID()
     return TPM_RC_SUCCESS;
 }
 
-void _simulator_deviceID_GetSeed(size_t size, uint8_t *seed, const TPM2B *purpose)
+void _plat_getSeed(size_t size, uint8_t *seed, const TPM2B *purpose)
 {
     RAND_STATE rand;
 
-    TPM_RC result = GetDeviceID();
+    TPM_RC result = getDeviceID();
     if(result != TPM_RC_SUCCESS)
     {
         LOG_FAILURE(FATAL_ERROR_INTERNAL);
@@ -271,6 +270,15 @@ void _simulator_deviceID_GetSeed(size_t size, uint8_t *seed, const TPM2B *purpos
         LOG_FAILURE(FATAL_ERROR_INTERNAL);
     }
     return;
+}
+
+void
+_plat__GetEPS(
+    size_t size,
+    uint8_t *seed
+    )
+{
+    _plat_getSeed(size, seed, EPS_CREATION);
 }
 
 #endif

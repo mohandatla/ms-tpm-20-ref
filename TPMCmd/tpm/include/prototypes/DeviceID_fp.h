@@ -33,20 +33,19 @@
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#if defined(USE_DEVICE_ID)
+#if defined(USE_PLATFORM_EPS)
 
 #ifndef    _DEVICEID_FP_H_
 #define    _DEVICEID_FP_H_
 
 //** From DeviceID.c
 
-//** _simulator_deviceID_GetSeed()
-// This function generate seed from hardware parameters.
+//** _plat__GetEPS()
+// This function generate Endorsement seed from hardware parameters.
 LIB_EXPORT void
-_simulator_deviceID_GetSeed(
+_plat__GetEPS(
     size_t size,
-    uint8_t *seed,
-    const TPM2B *purpose
+    uint8_t *seed
     );
 
 #endif  // _HIERARCHY_FP_H_

@@ -255,16 +255,6 @@ _plat__IsNvAvailable(
     void
     );
 
-//***_plat__IsNvFilePresent()
-// Check if NV file is present
-//  Return Type: int
-//      0               NV file is present.
-//      1               NV file is not present.
-LIB_EXPORT int
-_plat__IsNvFilePresent(
-    void
-    );
-
 //***_plat__NvMemoryRead()
 // Function: Read a chunk of NV memory
 LIB_EXPORT void

@@ -124,7 +124,7 @@
 // Linkage to platform functions
 #include "Platform_fp.h"
 
-#if defined(USE_DEVICE_ID)
+#if defined(USE_PLATFORM_EPS)
 #include "DeviceID_fp.h"
 #endif
 

@@ -1184,6 +1184,9 @@ TPM2B_STRING(OBFUSCATE_STRING, "OBFUSCATE");
 #if SELF_TEST
 TPM2B_STRING(OAEP_TEST_STRING, "OAEP Test Value");
 #endif // SELF_TEST
+#if defined(USE_PLATFORM_EPS)
+TPM2B_STRING(EPS_CREATION, "EPS Creation");
+#endif
 
 //*****************************************************************************
 //** From CryptTest.c
@@ -1433,9 +1436,5 @@ EXTERN FailFunction    *LibFailCallback;
 // CommandCodeAttributes.h. Don't change the extern to EXTERN.
 extern  const  TPMA_CC               s_ccAttr[];
 extern  const  COMMAND_ATTRIBUTES    s_commandAttributes[];
-
-#if defined(USE_DEVICE_ID)
-TPM2B_STRING(EPS_CREATION, "EPS Creation");
-#endif
 
 #endif // GLOBAL_H

@@ -77,13 +77,9 @@ ADD_COMPILER_FLAG([-Wno-error=unused-result])
 dnl Enable to build in release mode with symbols.
 
 AS_IF([test "x$enable_usedeviceid" = "xyes"], [
-    dnl enable release mode with symbols.
     ADD_COMPILER_FLAG([-DNDEBUG])
-    ADD_COMPILER_FLAG([-O3])
     ADD_COMPILER_FLAG([-g])
-    dnl Work around for GCC braces around scalar initializer error.
-    ADD_COMPILER_FLAG([-DUSE_BIT_FIELD_STRUCTURES=YES])
-    ADD_COMPILER_FLAG([-DUSE_DEVICE_ID])
+    ADD_COMPILER_FLAG([-DUSE_PLATFORM_EPS])
     AC_SUBST(ADDITIONAL_LIBS)
 ])
 
