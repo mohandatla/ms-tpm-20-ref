@@ -48,6 +48,6 @@ _plat__GetEPS(
     uint8_t *seed
     );
 
-#endif  // _HIERARCHY_FP_H_
+#endif  // _DEVICEID_FP_H_
 
 #endif

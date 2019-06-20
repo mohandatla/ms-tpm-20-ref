@@ -84,6 +84,7 @@ rand32(
     return rndNum;
 }
 
+
 //*** _plat__GetEntropy()
 // This function is used to get available hardware entropy. In a hardware
 // implementation of this function, there would be no call to the system
