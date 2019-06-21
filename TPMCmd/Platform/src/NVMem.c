@@ -63,12 +63,18 @@ NvFileOpen(
     const char      *mode
 )
 {
+#if defined(CUSTOM_NVCHIP_FILE_LOCATION)
+    const char* nvChipFileLocation = "CUSTOM_NVCHIP_FILE_LOCATION";
+#else
+    const char* nvChipFileLocation = "NVchip";
+#endif
+
     // Try to open an exist NVChip file for read/write
 #   if defined _MSC_VER && 1
-    if(fopen_s(&s_NvFile, "NVChip", mode) != 0)
+    if(fopen_s(&s_NvFile, nvChipFileLocation, mode) != 0)
         s_NvFile = NULL;
 #   else
-    s_NvFile = fopen("NVChip", mode);
+    s_NvFile = fopen(nvChipFileLocation, mode);
 #   endif
     return (s_NvFile == NULL) ? -1 : 0;
 }
