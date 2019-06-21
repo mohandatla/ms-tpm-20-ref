@@ -64,7 +64,11 @@ NvFileOpen(
 )
 {
 #if defined(CUSTOM_NVCHIP_FILE_LOCATION)
-    const char* nvChipFileLocation = "CUSTOM_NVCHIP_FILE_LOCATION";
+#   define XSTRINGIZING(s) STRINGIZING(s)
+#   define STRINGIZING(s) #s
+    const char* nvChipFileLocation = XSTRINGIZING(CUSTOM_NVCHIP_FILE_LOCATION);
+#   undef XSTRINGIZING
+#   undef STRINGIZING
 #else
     const char* nvChipFileLocation = "NVchip";
 #endif
