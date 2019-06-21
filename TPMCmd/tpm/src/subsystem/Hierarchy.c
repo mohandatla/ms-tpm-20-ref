@@ -64,7 +64,6 @@ HierarchyPreInstall_Init(
 #else
     CryptRandomGenerate(gp.EPSeed.t.size, gp.EPSeed.t.buffer);
 #endif
-
     CryptRandomGenerate(gp.SPSeed.t.size, gp.SPSeed.t.buffer);
     CryptRandomGenerate(gp.PPSeed.t.size, gp.PPSeed.t.buffer);
 

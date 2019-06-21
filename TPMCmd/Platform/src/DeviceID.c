@@ -46,7 +46,7 @@
 #include <sys/stat.h>
 
 #include "Tpm.h"
-#include "DeviceID_fp.h"
+#include "Platform_fp.h"
 
 #define DEVICEID_SIZE 48
 // Definition for Device ID value.
